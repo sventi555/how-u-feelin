@@ -6,28 +6,28 @@ import { useUser } from '@auth0/nextjs-auth0';
 
 export default function Home() {
 
+    // TODO: make sure you check all possible user states (isLoading, etc)
     const { user } = useUser();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    async function handleClick(emotion) {
-        setIsLoading(true);
+    // TODO: useEffect to check if user already submitted
+
+    async function handleClick(emotion, classification) {
         if (!user) {
             router.push('/api/auth/login');
         }
-        const response = await fetch('/api/submit', {
+        setIsLoading(true);
+        const response = await fetch('/api/moods', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ mood: emotion })
+            body: JSON.stringify({ emotion, classification, tzOffset: new Date().getTimezoneOffset() })
         });
 
         if (response.status === 201) {
             setIsLoading(false);
-
-            const responseJSON = await response.json();
-            user.lastSubmitted = responseJSON.timestamp;
         }
     }
 
@@ -38,7 +38,6 @@ export default function Home() {
             </Head>
             <main>
                 <h1>How U Feelin Today?</h1>
-                <a href="/api/hello">Test me</a>
                 {isLoading ? (
                     <h1 className="text-center text-3xl font-bold">Loading...</h1>
                 ) : (
@@ -49,7 +48,7 @@ export default function Home() {
                                 <ul>
                                     {emotions.map(emotion => (
                                         <li key={emotion}>
-                                            <button onClick={() => handleClick(emotion)}>
+                                            <button onClick={() => handleClick(emotion, classification)}>
                                                 {emotion}
                                             </button>
                                         </li>
