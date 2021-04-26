@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
-import { EMOTIONS } from 'lib/constants';
 import { useUser } from '@auth0/nextjs-auth0';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
+import { EMOTIONS } from 'lib/constants';
 
 import type { FC, ReactElement } from 'react';
 
@@ -17,7 +17,7 @@ const EmotionsList: FC<EmotionsListProps> = (props: EmotionsListProps): ReactEle
                 <div key={classification}>
                     <h2 className="text-xl font-bold">{classification}</h2>
                     <ul>
-                        {emotions.map(emotion => (
+                        {emotions.map((emotion: string) => (
                             <li key={emotion}>
                                 <button onClick={() => props.onClickEmotion(emotion, classification)}>
                                     {emotion}

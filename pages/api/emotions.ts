@@ -1,10 +1,11 @@
-import { withApiAuthRequired, getSession } from '@auth0/nextjs-auth0';
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import Joi from 'joi';
 import moment from 'moment';
 import { EMOTIONS } from 'lib/constants';
 import logger from 'lib/logger';
 import withDatabaseConnection from 'lib/neo4j';
 
+import type { ValidationError } from 'joi';
 import type { Session } from 'neo4j-driver';
 import type { NextApiRequest, NextApiResponse} from 'next';
 
@@ -17,7 +18,10 @@ async function GETHandler(req: NextApiRequest, res: NextApiResponse, db: Session
     const LOG_PREFIX = '[GET /emotions]';
 
     const session = getSession(req, res);
-    const userId = session.user.sub;
+    if (!session) {
+        return res.status(401).end();
+    }
+    const userId: string = session.user.sub;
 
     // validate request query
     const schema = Joi.object({
@@ -25,13 +29,18 @@ async function GETHandler(req: NextApiRequest, res: NextApiResponse, db: Session
         on: Joi.date().required()
     }).required();
 
-    const { error, value: query } = schema.validate(req.query);
+    interface querySchema {
+        byClassification?: boolean,
+        on: Date
+    }
+
+    const { error, value: query }: { error?: ValidationError, value: querySchema} = schema.validate(req.query);
     if (error) {
         logger.warn(`${LOG_PREFIX} user ${userId} submitted a bad request query - ${error}`);
         return res.status(400).json(error);
     }
 
-    const { byClassification, on }: { byClassification: boolean, on: Date }= query;
+    const { byClassification, on } = query;
     const dateString = moment.utc(on).format('YYYY-MM-DD');
 
     try {
@@ -52,7 +61,10 @@ async function POSTHandler(req: NextApiRequest, res: NextApiResponse, db: Sessio
     const LOG_PREFIX = '[POST /emotions]';
 
     const session = getSession(req, res);
-    const userId = session.user.sub;
+    if (!session) {
+        return res.status(401).end();
+    }
+    const userId: string = session.user.sub;
 
     // validate request body
     const schema = Joi.object({
@@ -61,13 +73,19 @@ async function POSTHandler(req: NextApiRequest, res: NextApiResponse, db: Sessio
         tzOffset: Joi.number().min(-840).max(720).required()
     }).required();
 
-    const { error, value: body } = schema.validate(req.body);
+    interface bodySchema {
+        emotion: string,
+        classification: string,
+        tzOffset: number
+    }
+
+    const { error, value: body }: { error?: ValidationError, value: bodySchema } = schema.validate(req.body);
     if (error) {
         logger.warn(`${LOG_PREFIX} user ${userId} submitted a bad request body - ${error}`);
         return res.status(400).json(error);
     }
 
-    const { emotion, classification, tzOffset }: { emotion: string, classification: string, tzOffset: number } = body;
+    const { emotion, classification, tzOffset } = body;
 
     const today = moment.utc().subtract(tzOffset, 'minutes').format('YYYY-MM-DD');
 
@@ -109,7 +127,7 @@ async function POSTHandler(req: NextApiRequest, res: NextApiResponse, db: Sessio
 
 export default withApiAuthRequired(
     withDatabaseConnection(
-        async (req: NextApiRequest, res: NextApiResponse, db: Session) => {
+        async (req: NextApiRequest, res: NextApiResponse, db: Session): Promise<void> => {
             switch (req.method) {
             case 'GET':
                 await GETHandler(req, res, db);

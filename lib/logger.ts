@@ -1,5 +1,5 @@
 import { createLogger, format, transports } from 'winston';
-const { combine, timestamp, json, colorize, simple } = format;
+const { colorize, combine, json, simple, timestamp } = format;
 
 const logger = createLogger({
     level: 'info',
