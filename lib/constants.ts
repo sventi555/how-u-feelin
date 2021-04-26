@@ -59,4 +59,4 @@ export const EMOTIONS = {
         'nauseated',
         'disturbed'
     ]
-};
+} as const;
