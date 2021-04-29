@@ -35,7 +35,7 @@ jobs:
       run: yarn ts
 
     - name: Build app
-    run: yarn build
+      run: yarn build
 
     - name: Run linter
       run: yarn lint
